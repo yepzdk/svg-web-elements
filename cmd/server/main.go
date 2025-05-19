@@ -100,7 +100,7 @@ func main() {
 			<pre>%s</pre>
 			
 			<script>
-			// Simple function to extract elements with IDs and fills/text content
+			// Function to extract elements with IDs and fills/text content
 			function analyzeSVG() {
 				const parser = new DOMParser();
 				const svgElement = document.querySelector('svg');
@@ -112,28 +112,59 @@ func main() {
 				document.getElementById('viewbox').textContent = 
 					svgElement.getAttribute('viewBox') || 'Not specified';
 				
-				// Find text elements
-				const textElements = svgDoc.querySelectorAll('[id]');
+				// Find all elements with IDs
+				const allElements = svgDoc.querySelectorAll('[id]');
 				let textHTML = '';
 				let colorHTML = '';
 				
-				textElements.forEach(el => {
-					if (el.textContent && el.textContent.trim()) {
+				// Process all elements
+				allElements.forEach(el => {
+					// Check for text elements
+					const textContent = getElementTextContent(el);
+					if (textContent) {
 						textHTML += '<div class="element">';
 						textHTML += '<strong>ID:</strong> ' + el.id + '<br>';
-						textHTML += '<strong>Text:</strong> "' + el.textContent.trim() + '"<br>';
+						textHTML += '<strong>Text:</strong> "' + textContent + '"<br>';
+						textHTML += '<strong>Element Type:</strong> ' + el.tagName + '<br>';
 						textHTML += '<strong>Usage:</strong> <code>text.' + el.id + '=New+Text</code>';
 						textHTML += '</div>';
 					}
 					
-					if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none') {
+					// Check for elements with fill attributes
+					if (el.getAttribute('fill')) {
+						const fillColor = el.getAttribute('fill');
 						colorHTML += '<div class="element">';
 						colorHTML += '<strong>ID:</strong> ' + el.id + '<br>';
-						colorHTML += '<strong>Current Color:</strong> <span style="display:inline-block;width:20px;height:20px;background:' + el.getAttribute('fill') + '"></span> ' + el.getAttribute('fill') + '<br>';
+						colorHTML += '<strong>Element Type:</strong> ' + el.tagName + '<br>';
+						colorHTML += '<strong>Current Color:</strong> <span style="display:inline-block;width:20px;height:20px;background:' + fillColor + '"></span> ' + fillColor + '<br>';
 						colorHTML += '<strong>Usage:</strong> <code>color.' + el.id + '=%23ff0000</code> (for red)';
 						colorHTML += '</div>';
 					}
+					
+					// For elements that might accept fill but don't have it yet
+					if (!el.getAttribute('fill') && (el.tagName === 'rect' || el.tagName === 'path' || 
+						el.tagName === 'circle' || el.tagName === 'polygon' || el.tagName === 'g')) {
+						colorHTML += '<div class="element">';
+						colorHTML += '<strong>ID:</strong> ' + el.id + '<br>';
+						colorHTML += '<strong>Element Type:</strong> ' + el.tagName + '<br>';
+						colorHTML += '<strong>No Fill Attribute</strong> - Can be added with: <code>color.' + el.id + '=%23ff0000</code>';
+						colorHTML += '</div>';
+					}
 				});
+				
+				// Helper function to get text content including from nested tspan elements
+				function getElementTextContent(element) {
+					if (element.tagName === 'text') {
+						// For text elements, include text from child nodes
+						return element.textContent.trim();
+					} else if (element.querySelector('text')) {
+						// For groups that contain text elements
+						const textEl = element.querySelector('text');
+						return textEl.textContent.trim();
+					}
+					// For other elements with text content
+					return element.textContent.trim() || null;
+				}
 				
 				document.getElementById('text-elements').innerHTML = textHTML || 'No text elements found';
 				document.getElementById('color-elements').innerHTML = colorHTML || 'No color elements found';
@@ -218,8 +249,9 @@ func main() {
 			
 			<div class="example">
 				<h3>Modified Colors</h3>
-				<img src="/ui/basic-auth.svg?color.page-background=#f0f9ff&color.btn-background_2=#0ea5e9" alt="Modified Colors SVG" />
-				<p>URL: <code>/ui/basic-auth.svg?color.page-background=#f0f9ff&amp;color.btn-background_2=#0ea5e9</code></p>
+				<img src="/ui/basic-auth.svg?color.page-background=%23f0f9ff&color.prompt-background=%23ffffff&color.btn-background_2=%230ea5e9" alt="Modified Colors SVG" />
+				<p>URL: <code>/ui/basic-auth.svg?color.page-background=%23f0f9ff&amp;color.prompt-background=%23ffffff&amp;color.btn-background_2=%230ea5e9</code></p>
+				<p><small>Note: Use <code>%23</code> instead of <code>#</code> in URLs for hex colors</small></p>
 			</div>
 			
 			<h2>Parameters</h2>
@@ -227,9 +259,10 @@ func main() {
 				<li><code>width</code> - Set the SVG width (other dimension scales proportionally if height not specified)</li>
 				<li><code>height</code> - Set the SVG height (other dimension scales proportionally if width not specified)</li>
 				<li><code>text.{element-id}</code> - Replace text in element with ID</li>
-				<li><code>color.{element-id}</code> - Change color of element with ID</li>
+				<li><code>color.{element-id}</code> - Change color of element with ID (use <code>%23</code> instead of <code>#</code> for hex colors)</li>
 				<li><code>url</code> - External URL to use (shown in the URL field)</li>
 			</ul>
+			<p>Try the <a href="/debug?svg=basic-auth.svg">SVG debug tool</a> to see all available element IDs.</p>
 			
 			<footer>
 				<p>SVG Web Elements Service</p>

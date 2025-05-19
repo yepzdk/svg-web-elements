@@ -234,13 +234,104 @@ func (p *Processor) modifySVG(svgData []byte, params SVGParams) ([]byte, error) 
 	
 	// Step 4: Handle color replacements
 	for elementID, newColor := range params.ColorReplacements {
-		// Find elements with the specified ID and replace their fill color
-		pattern := `id="` + elementID + `"[^>]*fill="[^"]*"`
-		replacement := func(match string) string {
-			// Replace just the fill attribute value
-			return regexp.MustCompile(`fill="[^"]*"`).ReplaceAllString(match, `fill="`+newColor+`"`)
+		log.Printf("Applying color replacement for element ID: %s with color: %s", elementID, newColor)
+		
+		// URL decode the color if it uses hex notation with %23 instead of #
+		if strings.Contains(newColor, "%23") {
+			newColor = strings.Replace(newColor, "%23", "#", -1)
 		}
-		svgString = regexp.MustCompile(pattern).ReplaceAllStringFunc(svgString, replacement)
+		
+		// Special handling for elements with known SVG structure
+		switch elementID {
+		case "page-background":
+			// This is the main background rectangle
+			fillPattern := `<rect id="page-background"[^>]*fill="[^"]*"`
+			if regexp.MustCompile(fillPattern).MatchString(svgString) {
+				svgString = regexp.MustCompile(fillPattern).ReplaceAllString(
+					svgString, 
+					`<rect id="page-background" width="809" height="370" fill="`+newColor+`"`)
+				log.Printf("Updated page background color to: %s", newColor)
+				continue
+			}
+		case "prompt-background":
+			// This is the dialog background path
+			fillPattern := `<path id="prompt-background"[^>]*fill="[^"]*"`
+			if regexp.MustCompile(fillPattern).MatchString(svgString) {
+				replacement := regexp.MustCompile(`fill="[^"]*"`).ReplaceAllString(
+					regexp.MustCompile(fillPattern).FindString(svgString),
+					`fill="`+newColor+`"`)
+				svgString = strings.Replace(svgString, 
+					regexp.MustCompile(fillPattern).FindString(svgString),
+					replacement, 1)
+				log.Printf("Updated prompt background color to: %s", newColor)
+				continue
+			}
+		case "btn-background_2":
+			// This is the sign-in button background
+			fillPattern := `<path id="btn-background_2"[^>]*fill="[^"]*"`
+			if regexp.MustCompile(fillPattern).MatchString(svgString) {
+				replacement := regexp.MustCompile(`fill="[^"]*"`).ReplaceAllString(
+					regexp.MustCompile(fillPattern).FindString(svgString),
+					`fill="`+newColor+`"`)
+				svgString = strings.Replace(svgString, 
+					regexp.MustCompile(fillPattern).FindString(svgString),
+					replacement, 1)
+				log.Printf("Updated sign-in button color to: %s", newColor)
+				continue
+			}
+		}
+		
+		// For any other element, try a generic approach
+		
+		// First, try to find elements with the exact ID that have a fill attribute
+		fillPattern := `(<[^>]*id="` + elementID + `"[^>]*fill=")[^"]*(")`
+		replaced := false
+		if regexp.MustCompile(fillPattern).MatchString(svgString) {
+			oldSvg := svgString
+			svgString = regexp.MustCompile(fillPattern).ReplaceAllString(svgString, "${1}"+newColor+"${2}")
+			replaced = (oldSvg != svgString)
+			if replaced {
+				log.Printf("Updated fill attribute for element with ID: %s", elementID)
+				continue
+			}
+		}
+		
+		// If that didn't work, try to find elements with the exact ID and add a fill attribute
+		if !replaced {
+			exactIdPattern := `(<[^>]*id="` + elementID + `"[^>]*)(>)`
+			if matches := regexp.MustCompile(exactIdPattern).FindStringSubmatch(svgString); len(matches) > 0 {
+				log.Printf("Found element with ID %s, adding fill attribute", elementID)
+				oldSvg := svgString
+				svgString = regexp.MustCompile(exactIdPattern).ReplaceAllString(svgString, "${1} fill=\""+newColor+"\"${2}")
+				replaced = (oldSvg != svgString)
+				if replaced {
+					log.Printf("Added fill attribute to element with ID: %s", elementID)
+					continue
+				}
+			}
+		}
+		
+		// Last resort: try to find texts with the specified ID and change their fill color
+		if !replaced {
+			textPattern := `(<text id="` + elementID + `"[^>]*)(fill="[^"]*")?([^>]*>)`
+			if matches := regexp.MustCompile(textPattern).FindStringSubmatch(svgString); len(matches) > 0 {
+				if matches[2] != "" {
+					// Replace existing fill
+					svgString = strings.Replace(svgString, matches[0], 
+						strings.Replace(matches[0], matches[2], `fill="`+newColor+`"`, 1), 1)
+				} else {
+					// Add fill attribute
+					svgString = strings.Replace(svgString, matches[0], 
+						matches[1] + ` fill="`+newColor+`"` + matches[3], 1)
+				}
+				log.Printf("Updated text color for element ID: %s", elementID)
+				continue
+			}
+		}
+		
+		if !replaced {
+			log.Printf("No suitable element found for color replacement with ID: %s", elementID)
+		}
 	}
 	
 	// Utility function to get min of two integers

@@ -102,8 +102,9 @@ func parseQueryParams(query url.Values) (svg.SVGParams, error) {
 		}
 		if strings.HasPrefix(key, "color.") && len(values) > 0 {
 			elementID := strings.TrimPrefix(key, "color.")
+			// Store raw color value without URL decoding (handled in processor)
 			params.ColorReplacements[elementID] = values[0]
-			log.Printf("Adding color replacement: %s -> %s", elementID, values[0])
+			log.Printf("Adding color replacement: %s -> %s (raw color value)", elementID, values[0])
 		}
 	}
 

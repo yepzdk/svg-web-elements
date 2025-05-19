@@ -44,7 +44,7 @@ You can customize the SVGs using query parameters:
 - `width` - Set the SVG width (e.g., `width=400`). When specified alone, height scales proportionally.
 - `height` - Set the SVG height (e.g., `height=200`). When specified alone, width scales proportionally.
 - `text.{element-id}` - Replace text in element with ID (e.g., `text.text-title=Login`)
-- `color.{element-id}` - Change color of element with ID (e.g., `color.page-background=#f0f9ff`)
+- `color.{element-id}` - Change color of element with ID (e.g., `color.page-background=%23f0f9ff`) - Note: Use `%23` instead of `#` in URLs for hex colors
 - `url` - External URL to display (e.g., `url=https://example.com`)
 
 ### Examples
@@ -71,7 +71,7 @@ http://localhost:8082/ui/basic-auth.svg?width=400
 
 Customized colors:
 ```
-http://localhost:8082/ui/basic-auth.svg?color.page-background=#f0f9ff&color.btn-background_2=#0ea5e9
+http://localhost:8082/ui/basic-auth.svg?color.page-background=%23f0f9ff&color.btn-background_2=%230ea5e9
 ```
 
 ## Project Structure
