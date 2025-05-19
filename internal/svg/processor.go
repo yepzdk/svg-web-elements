@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -71,17 +72,96 @@ func (p *Processor) modifySVG(svgData []byte, params SVGParams) ([]byte, error) 
 		svgString = strings.Replace(svgString, "<svg", `<svg xmlns="http://www.w3.org/2000/svg"`, 1)
 	}
 	
-	// Step 2: Handle width and height modifications
-	if params.Width != "" {
-		// Replace width attribute
-		widthPattern := `width="[^"]*"`
-		svgString = regexp.MustCompile(widthPattern).ReplaceAllString(svgString, `width="`+params.Width+`"`)
+	// Extract the original dimensions and viewBox
+	originalWidth := "809"
+	originalHeight := "370"
+	widthRegex := regexp.MustCompile(`width="([^"]*)"`)
+	heightRegex := regexp.MustCompile(`height="([^"]*)"`)
+	viewBoxRegex := regexp.MustCompile(`viewBox="([^"]*)"`)
+	
+	if widthMatches := widthRegex.FindStringSubmatch(svgString); len(widthMatches) > 1 {
+		originalWidth = widthMatches[1]
+	}
+	if heightMatches := heightRegex.FindStringSubmatch(svgString); len(heightMatches) > 1 {
+		originalHeight = heightMatches[1]
 	}
 	
-	if params.Height != "" {
-		// Replace height attribute
-		heightPattern := `height="[^"]*"`
-		svgString = regexp.MustCompile(heightPattern).ReplaceAllString(svgString, `height="`+params.Height+`"`)
+	// Get current viewBox or create one if it doesn't exist
+	viewBox := "0 0 " + originalWidth + " " + originalHeight
+	if viewBoxMatches := viewBoxRegex.FindStringSubmatch(svgString); len(viewBoxMatches) > 1 {
+		viewBox = viewBoxMatches[1]
+	}
+	
+	// Step 2: Handle width and height modifications
+	if params.Width != "" || params.Height != "" {
+		// Store for scaling calculation
+		newWidth := params.Width
+		newHeight := params.Height
+		
+		// Replace dimensions while maintaining aspect ratio if only one dimension is specified
+		if params.Width != "" && params.Height == "" {
+			// Calculate height to maintain aspect ratio
+			originalHeightVal, err := strconv.ParseFloat(originalHeight, 64)
+			if err != nil {
+				log.Printf("Error parsing original height: %v", err)
+				originalHeightVal = 370
+			}
+			originalWidthVal, err := strconv.ParseFloat(originalWidth, 64)
+			if err != nil {
+				log.Printf("Error parsing original width: %v", err)
+				originalWidthVal = 809
+			}
+			aspectRatio := originalHeightVal / originalWidthVal
+			widthVal, err := strconv.ParseFloat(params.Width, 64)
+			if err != nil {
+				log.Printf("Error parsing width parameter: %v", err)
+				widthVal = 400
+			}
+			heightVal := widthVal * aspectRatio
+			newHeight = fmt.Sprintf("%.0f", heightVal)
+		} else if params.Width == "" && params.Height != "" {
+			// Calculate width to maintain aspect ratio
+			originalWidthVal, err := strconv.ParseFloat(originalWidth, 64)
+			if err != nil {
+				log.Printf("Error parsing original width: %v", err)
+				originalWidthVal = 809
+			}
+			originalHeightVal, err := strconv.ParseFloat(originalHeight, 64)
+			if err != nil {
+				log.Printf("Error parsing original height: %v", err)
+				originalHeightVal = 370
+			}
+			aspectRatio := originalWidthVal / originalHeightVal
+			heightVal, err := strconv.ParseFloat(params.Height, 64)
+			if err != nil {
+				log.Printf("Error parsing height parameter: %v", err)
+				heightVal = 200
+			}
+			widthVal := heightVal * aspectRatio
+			newWidth = fmt.Sprintf("%.0f", widthVal)
+		}
+		
+		// Apply changes
+		if newWidth != "" {
+			widthPattern := `width="[^"]*"`
+			svgString = regexp.MustCompile(widthPattern).ReplaceAllString(svgString, `width="`+newWidth+`"`)
+			params.Width = newWidth
+		}
+		
+		if newHeight != "" {
+			heightPattern := `height="[^"]*"`
+			svgString = regexp.MustCompile(heightPattern).ReplaceAllString(svgString, `height="`+newHeight+`"`)
+			params.Height = newHeight
+		}
+		
+		// Always ensure viewBox is set to maintain proportions
+		viewBoxPattern := `viewBox="[^"]*"`
+		if viewBoxRegex.MatchString(svgString) {
+			svgString = regexp.MustCompile(viewBoxPattern).ReplaceAllString(svgString, `viewBox="`+viewBox+`"`)
+		} else {
+			// Add viewBox if it doesn't exist
+			svgString = strings.Replace(svgString, "<svg", `<svg viewBox="`+viewBox+`"`, 1)
+		}
 	}
 	
 	// Step 3: Handle text replacements
@@ -171,7 +251,20 @@ func (p *Processor) modifySVG(svgData []byte, params SVGParams) ([]byte, error) 
 		return b
 	}
 	
-	log.Printf("Final SVG preview (first 100 chars): %s", svgString[:min(100, len(svgString))])
+	// Apply final scaling transformations for better proportional scaling
+	if params.Width != "" || params.Height != "" {
+		// Add a preserveAspectRatio attribute to maintain proportions
+		if !strings.Contains(svgString, "preserveAspectRatio") {
+			svgString = strings.Replace(svgString, "<svg", `<svg preserveAspectRatio="xMidYMid meet"`, 1)
+		}
+	}
+	
+	// Ensure final SVG is valid
+	svgString = strings.TrimSpace(svgString)
+	
+	// Preview SVG for debugging
+	previewLen := min(100, len(svgString))
+	log.Printf("Final SVG preview (first %d chars): %s", previewLen, svgString[:previewLen])
 	return []byte(svgString), nil
 }
 

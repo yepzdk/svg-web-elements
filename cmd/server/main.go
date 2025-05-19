@@ -56,6 +56,12 @@ func main() {
 			<div class="controls">
 				<a href="/">&larr; Back to home</a>
 				<p>Use this page to understand the structure of the SVG and how to modify it with query parameters.</p>
+				<p>
+					<strong>Scaling Examples:</strong>
+					<a href="/ui/%s?width=400" target="_blank">width=400</a> |
+					<a href="/ui/%s?height=200" target="_blank">height=200</a> |
+					<a href="/ui/%s?width=500&height=250" target="_blank">width=500&height=250</a>
+				</p>
 			</div>
 			
 			<div class="grid">
@@ -69,6 +75,8 @@ func main() {
 						<li><code>/ui/%s?text.text-title=Custom+Title</code></li>
 						<li><code>/ui/%s?text.text-url=example.com</code></li>
 						<li><code>/ui/%s?width=500&height=300</code></li>
+						<li><code>/ui/%s?width=300</code> (height scales proportionally)</li>
+						<li><code>/ui/%s?height=200</code> (width scales proportionally)</li>
 					</ul>
 				</div>
 				
@@ -78,6 +86,13 @@ func main() {
 					
 					<h2>Color Elements</h2>
 					<div id="color-elements">Loading...</div>
+					
+					<h2>Scaling</h2>
+					<div class="element">
+						<strong>Original Size:</strong> <span id="original-size">Loading...</span><br>
+						<strong>ViewBox:</strong> <span id="viewbox">Loading...</span><br>
+						<p>The SVG will scale proportionally by default. You can specify either width or height (or both).</p>
+					</div>
 				</div>
 			</div>
 			
@@ -88,7 +103,14 @@ func main() {
 			// Simple function to extract elements with IDs and fills/text content
 			function analyzeSVG() {
 				const parser = new DOMParser();
-				const svgDoc = parser.parseFromString(document.querySelector('svg').outerHTML, "image/svg+xml");
+				const svgElement = document.querySelector('svg');
+				const svgDoc = parser.parseFromString(svgElement.outerHTML, "image/svg+xml");
+				
+				// Get SVG dimensions and viewBox
+				document.getElementById('original-size').textContent = 
+					svgElement.getAttribute('width') + ' x ' + svgElement.getAttribute('height');
+				document.getElementById('viewbox').textContent = 
+					svgElement.getAttribute('viewBox') || 'Not specified';
 				
 				// Find text elements
 				const textElements = svgDoc.querySelectorAll('[id]');
@@ -121,7 +143,7 @@ func main() {
 			window.onload = analyzeSVG;
 			</script>
 		</body>
-		</html>`, svgName, svgName, string(svgData), svgName, svgName, svgName, 
+		</html>`, svgName, svgName, svgName, svgName, svgName, string(svgData), svgName, svgName, svgName, svgName, svgName, 
 		strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(string(svgData), "&", "&amp;"), "<", "&lt;"), ">", "&gt;"))
 	})
 
@@ -188,9 +210,10 @@ func main() {
 			</div>
 			
 			<div class="example">
-				<h3>Modified Size</h3>
+				<h3>Modified Size (Proportional Scaling)</h3>
 				<img src="/ui/basic-auth.svg?width=400&height=200" alt="Modified Size SVG" />
 				<p>URL: <code>/ui/basic-auth.svg?width=400&amp;height=200</code></p>
+				<p><small>You can specify just width or height, and the other dimension will scale proportionally.</small></p>
 			</div>
 			
 			<div class="example">
@@ -201,8 +224,8 @@ func main() {
 			
 			<h2>Parameters</h2>
 			<ul>
-				<li><code>width</code> - Set the SVG width</li>
-				<li><code>height</code> - Set the SVG height</li>
+				<li><code>width</code> - Set the SVG width (other dimension scales proportionally if height not specified)</li>
+				<li><code>height</code> - Set the SVG height (other dimension scales proportionally if width not specified)</li>
 				<li><code>text.{element-id}</code> - Replace text in element with ID</li>
 				<li><code>color.{element-id}</code> - Change color of element with ID</li>
 				<li><code>url</code> - External URL to use (shown in the URL field)</li>
