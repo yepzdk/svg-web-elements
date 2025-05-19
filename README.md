@@ -98,3 +98,58 @@ svg-web-elements/
 ## Languages and Technologies
 
 Project is written in Go with plain HTML, CSS, and JavaScript for the web interface.
+
+## Docker Deployment
+
+This project can be deployed using Docker and Docker Compose.
+
+### Building and Running with Docker Compose
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/svg-web-elements.git
+cd svg-web-elements
+```
+
+2. Create a `.env` file with your environment variables:
+```bash
+DOMAIN=example.com  # Your domain
+PUID=1000           # User ID
+PGID=1000           # Group ID
+TZ=UTC              # Timezone
+```
+
+3. Build and start the container:
+```bash
+docker compose up -d
+```
+
+The service will be available at `https://svg.example.com` (or whatever domain you configured).
+
+### Manual Docker Build
+
+If you prefer to build and run the Docker image manually:
+
+```bash
+# Build the image
+docker build -t svg-web-elements .
+
+# Run the container
+docker run -d -p 8082:8082 -v $(pwd)/static:/app/static -v $(pwd)/svg-cache:/app/cache --name svg-web-elements svg-web-elements
+```
+
+The service will be available at `http://localhost:8082`.
+
+### Configuration
+
+When running in Docker, you can configure the application using environment variables:
+- `PORT`: The port the application listens on (default: 8082)
+- `HOST`: The host interface to bind to (default: "" which binds to all interfaces)
+- `SVG_DIR`: The base directory for the application (default: auto-detected)
+- `TZ`: Timezone
+- `PUID`/`PGID`: User and group IDs for file permissions
+
+For convenience, you can also use the included start script:
+```bash
+./start.sh
+```

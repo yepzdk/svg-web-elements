@@ -178,6 +178,12 @@ func main() {
 		strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(string(svgData), "&", "&amp;"), "<", "&lt;"), ">", "&gt;"))
 	})
 
+	// Add health check endpoint
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+	
 	// Add a simple index page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -274,13 +280,21 @@ func main() {
 
 	// Start the server
 	port := getEnv("PORT", "8082")
-	log.Printf("Starting server on port %s...", port)
+	host := getEnv("HOST", "")
+	addr := host + ":" + port
+	
+	log.Printf("Starting server on %s...", addr)
 	log.Printf("SVG files will be served from: %s", svgDir)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
 // getBaseDir returns the base directory for the application
 func getBaseDir() string {
+	// Check if SVG_DIR environment variable is set
+	if svgDir := os.Getenv("SVG_DIR"); svgDir != "" {
+		return svgDir
+	}
+	
 	// Try to use working directory first
 	wd, err := os.Getwd()
 	if err == nil {

@@ -1,0 +1,41 @@
+networks:
+  web:
+    external: true
+
+services:
+  svg_web_elements:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: svg-web-elements:latest
+    container_name: svg_web_elements
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+      - PORT=8082
+      - HOST=0.0.0.0
+      - SVG_DIR=/app
+    volumes:
+      - ./static:/app/static
+      - ./svg-cache:/app/cache
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "8082:8082"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.svg_web_elements.entrypoints=web-secure"
+      - "traefik.http.routers.svg_web_elements.rule=Host(`svg.${DOMAIN}`)"
+      - "traefik.http.routers.svg_web_elements.tls=true"
+      - "traefik.http.routers.svg_web_elements.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.svg_web_elements.tls.options=modern@file"
+      - "traefik.http.routers.svg_web_elements.middlewares=default@file"
+      - "traefik.http.services.svg_web_elements.loadbalancer.server.port=8082"
+    restart: unless-stopped
