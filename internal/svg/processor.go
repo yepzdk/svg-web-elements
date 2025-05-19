@@ -2,6 +2,7 @@ package svg
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -85,15 +86,70 @@ func (p *Processor) modifySVG(svgData []byte, params SVGParams) ([]byte, error) 
 	
 	// Step 3: Handle text replacements
 	for elementID, newText := range params.TextReplacements {
-		// Find the pattern: id="elementID"...>text</
-		pattern := `id="` + elementID + `"[^>]*>[^<]*<`
-		replacement := func(match string) string {
-			// Extract the part before the text
-			beforeText := match[:strings.LastIndex(match, ">")+1]
-			// Return before + new text + closing bracket
-			return beforeText + newText + "<"
+		log.Printf("Replacing text for element ID: %s with: %s", elementID, newText)
+		
+		// Dump current SVG content for debugging
+		log.Printf("Current SVG content (first 200 chars): %s", svgString[:min(200, len(svgString))])
+		
+		// First try with the specific structure of our SVG that uses tspan elements
+		// This is a very specific pattern for the exact structure of our example SVG
+		tspanSpecificPattern := `(<text id="` + elementID + `"[^>]*>[ \t\n\r]*<tspan[^>]*>)[^<]*(</tspan>)`
+		if matches := regexp.MustCompile(tspanSpecificPattern).FindStringSubmatch(svgString); len(matches) > 0 {
+			log.Printf("Found specific tspan pattern for %s. Match: %s", elementID, matches[0])
+			newSvgString := regexp.MustCompile(tspanSpecificPattern).ReplaceAllString(svgString, "${1}"+newText+"${2}")
+			if newSvgString != svgString {
+				log.Printf("Text replacement succeeded with specific tspan pattern")
+				svgString = newSvgString
+				continue
+			}
 		}
-		svgString = regexp.MustCompile(pattern).ReplaceAllStringFunc(svgString, replacement)
+		
+		// Fall back to more general patterns
+		log.Printf("Trying more general patterns for element ID: %s", elementID)
+		
+		// Try a pattern for direct text content
+		directPattern := `(<text id="` + elementID + `"[^>]*>)([^<]*)(</text>)`
+		if matches := regexp.MustCompile(directPattern).FindStringSubmatch(svgString); len(matches) > 0 {
+			log.Printf("Found direct text pattern for %s. Match: %s", elementID, matches[0])
+			newSvgString := regexp.MustCompile(directPattern).ReplaceAllString(svgString, "${1}"+newText+"${3}")
+			if newSvgString != svgString {
+				log.Printf("Text replacement succeeded with direct pattern")
+				svgString = newSvgString
+				continue
+			}
+		}
+		
+		// Try one more pattern for nested elements that's common in SVGs
+		log.Printf("Trying complex pattern for element ID: %s", elementID)
+		svgBeforeComplexPattern := svgString // save for comparison
+		
+		// This hacky approach is more likely to work with real SVGs
+		// We find the text element, extract its content, and make a targeted replacement
+		re := regexp.MustCompile(`<text[^>]*id="` + elementID + `"[^>]*>(.*?)</text>`)
+		matches := re.FindStringSubmatch(svgString)
+		if len(matches) > 0 {
+			log.Printf("Found text element with id=%s: %s", elementID, matches[0])
+			
+			// See if there's a tspan inside
+			tspanContent := regexp.MustCompile(`<tspan[^>]*>(.*?)</tspan>`).FindStringSubmatch(matches[1])
+			if len(tspanContent) > 0 {
+				log.Printf("Found tspan content: %s", tspanContent[1])
+				// Replace just the text content inside the tspan
+				newTextElement := strings.Replace(matches[0], tspanContent[1], newText, 1)
+				svgString = strings.Replace(svgString, matches[0], newTextElement, 1)
+			} else {
+				// No tspan, replace direct text content
+				newTextElement := strings.Replace(matches[0], matches[1], newText, 1)
+				svgString = strings.Replace(svgString, matches[0], newTextElement, 1)
+			}
+			
+			if svgString != svgBeforeComplexPattern {
+				log.Printf("Text replacement succeeded with complex pattern")
+				continue
+			}
+		}
+		
+		log.Printf("WARNING: No pattern matched for %s", elementID)
 	}
 	
 	// Step 4: Handle color replacements
@@ -107,6 +163,15 @@ func (p *Processor) modifySVG(svgData []byte, params SVGParams) ([]byte, error) 
 		svgString = regexp.MustCompile(pattern).ReplaceAllStringFunc(svgString, replacement)
 	}
 	
+	// Utility function to get min of two integers
+	min := func(a, b int) int {
+		if a < b {
+			return a
+		}
+		return b
+	}
+	
+	log.Printf("Final SVG preview (first 100 chars): %s", svgString[:min(100, len(svgString))])
 	return []byte(svgString), nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/svg-web-elements/internal/handlers"
 )
@@ -21,6 +22,108 @@ func main() {
 	// Setup routes
 	http.Handle("/ui/", http.StripPrefix("/ui/", svgHandler))
 	http.HandleFunc("/list", svgHandler.ListSVGsHandler)
+	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
+		svgName := r.URL.Query().Get("svg")
+		if svgName == "" {
+			http.Error(w, "Missing svg parameter", http.StatusBadRequest)
+			return
+		}
+		
+		svgPath := filepath.Join(svgDir, svgName)
+		svgData, err := os.ReadFile(svgPath)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error reading SVG: %v", err), http.StatusInternalServerError)
+			return
+		}
+		
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprintf(w, `<!DOCTYPE html>
+		<html>
+		<head>
+			<title>SVG Debug - %s</title>
+			<style>
+				body { font-family: system-ui, sans-serif; padding: 2rem; line-height: 1.5; }
+				pre { background: #f1f1f1; padding: 1rem; overflow: auto; }
+				.highlight { background: yellow; }
+				.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+				.element { margin-bottom: 1rem; border: 1px solid #ddd; padding: 1rem; }
+				.controls { margin-bottom: 2rem; }
+			</style>
+		</head>
+		<body>
+			<h1>SVG Debug for %s</h1>
+			
+			<div class="controls">
+				<a href="/">&larr; Back to home</a>
+				<p>Use this page to understand the structure of the SVG and how to modify it with query parameters.</p>
+			</div>
+			
+			<div class="grid">
+				<div>
+					<h2>SVG Preview</h2>
+					<div style="border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem;">
+						%s
+					</div>
+					<p>To customize this SVG, use query parameters like:</p>
+					<ul>
+						<li><code>/ui/%s?text.text-title=Custom+Title</code></li>
+						<li><code>/ui/%s?text.text-url=example.com</code></li>
+						<li><code>/ui/%s?width=500&height=300</code></li>
+					</ul>
+				</div>
+				
+				<div>
+					<h2>Text Elements</h2>
+					<div id="text-elements">Loading...</div>
+					
+					<h2>Color Elements</h2>
+					<div id="color-elements">Loading...</div>
+				</div>
+			</div>
+			
+			<h2>Raw SVG Source</h2>
+			<pre>%s</pre>
+			
+			<script>
+			// Simple function to extract elements with IDs and fills/text content
+			function analyzeSVG() {
+				const parser = new DOMParser();
+				const svgDoc = parser.parseFromString(document.querySelector('svg').outerHTML, "image/svg+xml");
+				
+				// Find text elements
+				const textElements = svgDoc.querySelectorAll('[id]');
+				let textHTML = '';
+				let colorHTML = '';
+				
+				textElements.forEach(el => {
+					if (el.textContent && el.textContent.trim()) {
+						textHTML += '<div class="element">';
+						textHTML += '<strong>ID:</strong> ' + el.id + '<br>';
+						textHTML += '<strong>Text:</strong> "' + el.textContent.trim() + '"<br>';
+						textHTML += '<strong>Usage:</strong> <code>text.' + el.id + '=New+Text</code>';
+						textHTML += '</div>';
+					}
+					
+					if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none') {
+						colorHTML += '<div class="element">';
+						colorHTML += '<strong>ID:</strong> ' + el.id + '<br>';
+						colorHTML += '<strong>Current Color:</strong> <span style="display:inline-block;width:20px;height:20px;background:' + el.getAttribute('fill') + '"></span> ' + el.getAttribute('fill') + '<br>';
+						colorHTML += '<strong>Usage:</strong> <code>color.' + el.id + '=%23ff0000</code> (for red)';
+						colorHTML += '</div>';
+					}
+				});
+				
+				document.getElementById('text-elements').innerHTML = textHTML || 'No text elements found';
+				document.getElementById('color-elements').innerHTML = colorHTML || 'No color elements found';
+			}
+			
+			// Run analysis when page loads
+			window.onload = analyzeSVG;
+			</script>
+		</body>
+		</html>`, svgName, svgName, string(svgData), svgName, svgName, svgName, 
+		strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(string(svgData), "&", "&amp;"), "<", "&lt;"), ">", "&gt;"))
+	})
 
 	// Add a simple index page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +172,8 @@ func main() {
 			<p>You can use the SVGs in your applications by creating an image tag with the URL:</p>
 			<code>&lt;img src="https://this-service/ui/basic-auth.svg?width=400&amp;height=200&amp;text.text-title=Login" /&gt;</code>
 			
-			<h2>Examples</h2>
+			<h2>Diagnostics & Examples</h2>
+			<p>Use the <a href="/debug?svg=basic-auth.svg">SVG diagnostic tool</a> to inspect SVG elements and their IDs.</p>
 			
 			<div class="example">
 				<h3>Basic Example</h3>

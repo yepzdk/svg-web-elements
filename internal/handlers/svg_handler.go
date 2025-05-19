@@ -30,6 +30,7 @@ func (h *SVGHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	svgName := filepath.Base(path)
 	
 	log.Printf("SVG request: %s, User-Agent: %s", svgName, r.UserAgent())
+	log.Printf("Query parameters: %v", r.URL.RawQuery)
 
 	// Parse query parameters
 	params, err := parseQueryParams(r.URL.Query())
@@ -38,6 +39,10 @@ func (h *SVGHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Invalid parameters: %v", err), http.StatusBadRequest)
 		return
 	}
+	
+	// Log the processed parameters for debugging
+	log.Printf("Text replacements: %v", params.TextReplacements)
+	log.Printf("Color replacements: %v", params.ColorReplacements)
 
 	// Process the SVG
 	svgData, err := h.processor.ProcessSVG(svgName, params)
@@ -48,6 +53,13 @@ func (h *SVGHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	log.Printf("Successfully processed SVG: %s, size: %d bytes", svgName, len(svgData))
+	
+	// Log first 100 chars of SVG for debugging
+	previewSize := 100
+	if len(svgData) < previewSize {
+		previewSize = len(svgData)
+	}
+	log.Printf("SVG preview: %s...", string(svgData[:previewSize]))
 
 	// Set content type and other headers
 	w.Header().Set("Content-Type", "image/svg+xml")
@@ -86,10 +98,12 @@ func parseQueryParams(query url.Values) (svg.SVGParams, error) {
 		if strings.HasPrefix(key, "text.") && len(values) > 0 {
 			elementID := strings.TrimPrefix(key, "text.")
 			params.TextReplacements[elementID] = values[0]
+			log.Printf("Adding text replacement: %s -> %s", elementID, values[0])
 		}
 		if strings.HasPrefix(key, "color.") && len(values) > 0 {
 			elementID := strings.TrimPrefix(key, "color.")
 			params.ColorReplacements[elementID] = values[0]
+			log.Printf("Adding color replacement: %s -> %s", elementID, values[0])
 		}
 	}
 
