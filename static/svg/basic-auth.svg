@@ -1,0 +1,50 @@
+<svg width="809" height="370" viewBox="0 0 809 370" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="basic-auth">
+        <rect id="page-background" width="809" height="370" fill="#E5E7EB"/>
+        <g id="prompt" filter="url(#filter0_dd_19_2)">
+            <path id="prompt-background" d="M149 57C149 54.7909 150.791 53 153 53H656C658.209 53 660 54.7909 660 57V312C660 314.209 658.209 316 656 316H153C150.791 316 149 314.209 149 312V57Z" fill="white"/>
+            <text id="text-title" fill="#111827" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="18" font-weight="500" letter-spacing="0em"><tspan x="168" y="91.5455">Sign in</tspan></text>
+            <text id="text-url" fill="#111827" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" letter-spacing="0em"><tspan x="168" y="123.818">https://the.domain.link</tspan></text>
+            <g id="form-group">
+                <g id="input-group">
+                    <path id="input-background" d="M257 149.5H638C639.933 149.5 641.5 151.067 641.5 153V180C641.5 181.933 639.933 183.5 638 183.5H257C255.067 183.5 253.5 181.933 253.5 180V153C253.5 151.067 255.067 149.5 257 149.5Z" fill="white" stroke="#D1D5DB"/>
+                    <text id="text-username" fill="#111827" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" letter-spacing="0em"><tspan x="261" y="170.818">user</tspan></text>
+                </g>
+                <text id="label-username" fill="#111827" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" letter-spacing="0em"><tspan x="168" y="170.818">Username</tspan></text>
+            </g>
+            <g id="form-group_2">
+                <g id="input-group_2">
+                    <path id="input-background_2" d="M257 198.5H638C639.933 198.5 641.5 200.067 641.5 202V229C641.5 230.933 639.933 232.5 638 232.5H257C255.067 232.5 253.5 230.933 253.5 229V202C253.5 200.067 255.067 198.5 257 198.5Z" fill="white" stroke="#D1D5DB"/>
+                    <text id="text-password" fill="#111827" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" letter-spacing="0em"><tspan x="261" y="220.818">&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;</tspan></text>
+                </g>
+                <text id="label-password" fill="#111827" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" letter-spacing="0em"><tspan x="168" y="220.818">Password</tspan></text>
+            </g>
+            <g id="btn-cancel">
+                <path id="btn-background" d="M475 263.5H548C549.933 263.5 551.5 265.067 551.5 267V294C551.5 295.933 549.933 297.5 548 297.5H475C473.067 297.5 471.5 295.933 471.5 294V267C471.5 265.067 473.067 263.5 475 263.5Z" fill="white" stroke="#D1D5DB"/>
+                <text id="text-cancel" fill="#2563EB" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" letter-spacing="0em"><tspan x="485" y="285.818">Cancel</tspan></text>
+            </g>
+            <g id="btn-sign-in">
+                <path id="btn-background_2" d="M561 267C561 264.791 562.791 263 565 263H638C640.209 263 642 264.791 642 267V294C642 296.209 640.209 298 638 298H565C562.791 298 561 296.209 561 294V267Z" fill="#2563EB"/>
+                <text id="text-sign-in" fill="white" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" letter-spacing="0em"><tspan x="575" y="285.818">Sign in</tspan></text>
+            </g>
+        </g>
+    </g>
+    <defs>
+        <filter id="filter0_dd_19_2" x="144" y="52" width="521" height="273" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+            <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+            <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect1_dropShadow_19_2"/>
+            <feOffset dy="2"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0"/>
+            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_19_2"/>
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+            <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect2_dropShadow_19_2"/>
+            <feOffset dy="4"/>
+            <feGaussianBlur stdDeviation="3"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0"/>
+            <feBlend mode="normal" in2="effect1_dropShadow_19_2" result="effect2_dropShadow_19_2"/>
+            <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_19_2" result="shape"/>
+        </filter>
+    </defs>
+</svg>
